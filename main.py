@@ -57,6 +57,7 @@ while True:
         h = str(hum)
         setText_norefresh("T:" + t + "  t:" + tm +"s\n" + "H:" + h + "% " + "L:" + svr)
 
+        # Archivo 
         lista=[t,h,svr,tm]
         with open(log_file,"wb") as archivo:
             pickle.dump(lista,archivo)
