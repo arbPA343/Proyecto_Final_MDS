@@ -1,75 +1,94 @@
-from grovepi import *
-from grove_rgb_lcd import *
-from time import sleep
-from math import isnan
-import pickle
+import csv
+import time
+import math
+from datetime import datetime
 
-# Conexión y configuración del LDR 
+# Función para leer el valor analógico del pin
+def analogRead(pin):
+    # Implementa aquí la lógica para leer el valor analógico del pin
+    # y devuelve el valor leído.
+    return 0
+
+# Función para establecer el modo de un pin
+def pinMode(pin, mode):
+    # Implementa aquí la lógica para establecer el modo del pin.
+    pass
+
+# Función para leer la temperatura y la humedad
+def readDHTSensor(port, sensor_type):
+    # Implementa aquí la lógica para leer la temperatura y la humedad
+    # utilizando el puerto y el tipo de sensor especificados.
+    # Devuelve la temperatura y la humedad como una lista [temperatura, humedad].
+    return [0, 0]
+
+# Función para obtener la hora y la fecha actual
+def obtener_hora_fecha_actual():
+    now = datetime.now()
+    return now.strftime("%Y-%m-%d %H:%M:%S")
+
+# Conexión y configuración del LDR
 light_sensor = 2
-pinMode(light_sensor,"INPUT")
+pinMode(light_sensor, "INPUT")
 
-# Valores de referencia para conversion a radiación lumínica 
+# Valores de referencia para conversión a radiación lumínica
 valorRef = 1000
 valorMax = 763
 
-# Conexión y configuración del Sensor de temperatura y humedad 
-dht_sensor_port = 3 # Puerto del sensor
-dht_sensor_type = 0 # Identificador del sensor 
+# Conexión y configuración del Sensor de temperatura y humedad
+dht_sensor_port = 3  # Puerto del sensor
+dht_sensor_type = 0  # Identificador del sensor
 
-# Conexión y configuración del potenciometro
+# Conexión y configuración del potenciómetro
 dhtpoten = 1
 
-# Configuración del archivo de exportación de datos
-log_file ="/home/pi/Desktop/Lista.pkl"
+# Configuración del archivo de exportación de datos CSV
+csv_file = "C:\Users\User\Desktop\Datos.csv"
 
-# Configuración del color de la pantalla LCD
-setRGB(0,255,0)
+# Abrir el archivo CSV en modo escritura
+with open(csv_file, "w", newline="") as archivo:
+    writer = csv.writer(archivo)
+    writer.writerow(["Hora", "Fecha", "Temperatura", "Humedad", "Luz", "Tiempo Muestreo"])
 
-#Inicio del programa
-while True:
-    try:
-        
-        u = 5
-        # Determinación del tiempo de muestreo mediante un potenciometro
-        timeM = analogRead(dhtpoten)
-        mus= int((timeM / 255.75) +1)
-        tm=str(mus)
-        
-        # Lectura de la intensidad lumínica
-        sensor_value = analogRead(light_sensor)
-        
-        # conversion de valores del LDR a valores de intensidad luminica
-        resistance = (float)(1023 - sensor_value) * 10 / (sensor_value+0.3)
-        
-        # mostrar en la pantalla LCD
-        svr= str((sensor_value / valorMax) * valorRef)
-        time.sleep(.5)
-        
-        # lectura de temperatura y humedad
-        [ temp,hum ] = dht(dht_sensor_port,dht_sensor_type)
-        print("temp =", temp, "C\thum =", hum,"%"  "luz =", svr )
+    while True:
+        try:
+            # Obtener la hora y la fecha actual
+            hora_fecha_actual = obtener_hora_fecha_actual()
 
-        if isnan(temp) is True or isnan(hum) is True:
-            raise TypeError('nan error')
-        
-        # Imprimir mensajes en el terminal y en la pantalla LCD    
-        t = str(temp)
-        h = str(hum)
-        setText_norefresh("T:" + t + "  t:" + tm +"s\n" + "H:" + h + "% " + "L:" + svr)
+            # Obtener el tiempo de muestreo
+            timeM = analogRead(dhtpoten)
+            mus = int((timeM / 255.75) + 1)
+            tm = str(mus)
 
-        # Archivo 
-        lista=[t,h,svr,tm]
-        with open(log_file,"wb") as archivo:
-            pickle.dump(lista,archivo)
+            # Lectura de la intensidad lumínica
+            sensor_value = analogRead(light_sensor)
 
-    except (IOError, TypeError) as e:
-        print(str(e))
-        setText("")
+            # Conversión de valores del LDR a intensidad lumínica
+            resistance = (float)(1023 - sensor_value) * 10 / (sensor_value + 0.3)
+            svr = str((sensor_value / valorMax) * valorRef)
+            time.sleep(0.5)
 
-    except KeyboardInterrupt as e:
-        print(str(e))
-        setText("")
-        break
-    
-    # Implementación del tiempo de muestreo
-    sleep(mus)
+            # Lectura de temperatura y humedad
+            [temp, hum] = readDHTSensor(dht_sensor_port, dht_sensor_type)
+            print("temp =", temp, "C\thum =", hum, "%" "luz =", svr)
+
+            if math.isnan(temp) or math.isnan(hum):
+                raise TypeError('nan error')
+
+            # Imprimir valores en la terminal
+            t = str(temp)
+            h = str(hum)
+            print("Hora:", hora_fecha_actual)
+            print("T:" + t + "  t:" + tm + "s\n" + "H:" + h + "% " + "L:" + svr)
+
+            # Guardar los valores en el archivo CSV
+            writer.writerow([hora_fecha_actual, temp, hum, svr, tm])
+
+        except (IOError, TypeError) as e:
+            print(str(e))
+
+        except KeyboardInterrupt as e:
+            print(str(e))
+            break
+
+        # Implementación del tiempo de muestreo
+        time.sleep(mus)
